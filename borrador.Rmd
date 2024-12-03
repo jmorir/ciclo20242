@@ -1,0 +1,383 @@
+---
+title: "Untitled"
+author: "Joaquín Mori"
+date: "2024-12-02"
+output: html_document
+---
+```{r}
+install.packages("jsonlite")
+```
+
+```{r}
+library(jsonlite)
+
+# Cargar el archivo .json
+json_data <- fromJSON("C:/Users/User/Downloads/graph_figure.json")
+
+```
+
+```{r}
+# Guardar como archivo .rds
+saveRDS(json_data, "C:/Users/User/Downloads/output_file.rds")
+
+```
+
+```{r}
+library(ggplot2)
+library(grid)
+library(png)
+
+# Cargar la imagen
+mapa_img <- rasterGrob(png::readPNG("mapa_elecciones.png"), interpolate = TRUE)
+
+# Crear un gráfico con límites explícitos para las coordenadas
+plot <- ggplot() +
+  annotation_custom(mapa_img, xmin = 0, xmax = 10, ymin = 0, ymax = 10) +
+  coord_fixed() + # Mantener proporción fija
+  theme_void()
+
+# Mostrar el gráfico
+print(plot)
+
+# Guardar el gráfico como archivo .rds
+saveRDS(plot, "mapa_elecciones.rds")
+
+cat("Gráfico guardado como mapa_elecciones.rds\n")
+
+```
+```{r}
+library(ggplot2)
+library(grid)
+library(png)
+
+# Leer la imagen PNG
+mapa_img <- png::readPNG("mapa_elecciones.png")
+
+# Convertir la imagen en un objeto raster
+mapa_raster <- grid::rasterGrob(mapa_img, interpolate = TRUE)
+
+# Crear un gráfico simple que incluya la imagen
+plot <- ggplot() +
+  annotation_raster(mapa_img, xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = Inf) +
+  coord_fixed() +
+  theme_void()
+
+# Mostrar el gráfico
+print(plot)
+
+# Guardar el gráfico como archivo .rds
+saveRDS(plot, "mapa_elecciones.rds")
+
+cat("Gráfico guardado como mapa_elecciones.rds\n")
+
+```
+```{r}
+# Cargar bibliotecas
+library(sf)
+library(ggplot2)
+
+# Leer el archivo GeoJSON
+elecciones <- st_read("elecciones.geojson")
+
+# Crear el gráfico
+mapa <- ggplot(elecciones) +
+  geom_sf(aes(fill = Ganador)) +
+  scale_fill_manual(values = c(
+    "FP" = "orange", "PPK" = "pink", "FA" = "green",
+    "AP" = "red", "APRA-PPC" = "brown", "DD" = "yellow",
+    "FE" = "blue", "PP" = "purple", "PgP" = "cyan", "PPO" = "magenta"
+  )) +
+  labs(title = "Mapa Electoral por Provincia - Ganador") +
+  theme_minimal()
+
+# Mostrar el gráfico
+print(mapa)
+
+
+# Guardar el gráfico como archivo .rds
+saveRDS(mapa, "mapa_elecciones.rds")
+cat("El gráfico se ha guardado como 'mapa_elecciones.rds'.\n")
+
+```
+
+```{r}
+# Crear el gráfico para la variable "Segundo Ganador"
+mapa_segundo <- ggplot(elecciones) +
+  geom_sf(aes(fill = Segundo.Ganador)) +  # Cambiar a Segundo_Ganador
+  scale_fill_manual(values = c(
+    "FP" = "orange", "PPK" = "pink", "FA" = "green",
+    "AP" = "red", "APRA-PPC" = "brown", "DD" = "yellow",
+    "FE" = "blue", "PP" = "purple", "PgP" = "cyan", "PPO" = "magenta"
+  )) +
+  labs(title = "Mapa Electoral por Provincia - Segundo Ganador") +
+  theme_minimal()
+
+# Mostrar el gráfico
+print(mapa_segundo)
+
+# Guardar el gráfico como archivo .rds
+saveRDS(mapa_segundo, "mapa_elecciones_segundo.rds")
+cat("El gráfico se ha guardado como 'mapa_elecciones_segundo.rds'.\n")
+
+```
+
+
+
+
+```{r}
+#install.packages("sf")
+#install.packages("ggplot2")
+#install.packages("tidyr")
+#install.packages("dplyr")
+
+library(sf)
+library(ggplot2)
+library(tidyr)
+library(dplyr)
+```
+
+```{r}
+# Instalar y cargar dplyr si no está instalado
+#install.packages("dplyr")
+library(dplyr)
+
+# Reordenar los niveles de la variable Partido según la suma de votos
+elecciones_largo <- elecciones_largo %>%
+  group_by(Partido) %>%
+  mutate(TotalVotosPartido = sum(Votos, na.rm = TRUE)) %>%
+  ungroup() %>%
+  mutate(Partido = reorder(Partido, -TotalVotosPartido))
+
+# Crear el gráfico con el nuevo orden de los partidos
+grafico_barras <- ggplot(elecciones_largo, aes(x = DEPARTAMEN, y = Votos, fill = Partido)) +
+  geom_bar(stat = "identity") +
+  scale_fill_manual(values = c(
+    "FP" = "orange", "PPK" = "pink", "FA" = "green",
+    "AP" = "red", "APRA.PPC" = "brown", "DD" = "yellow",
+    "FE" = "blue", "PP" = "purple", "PgP" = "cyan", "PPO" = "magenta"
+  )) +
+  scale_y_continuous(
+    labels = label_number(accuracy = 1, big.mark = ",", decimal.mark = ".")
+  ) +
+  labs(
+    title = "Distribución de Votos por Departamento y Partido",
+    x = "Departamento",
+    y = "Votos"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))  # Rotar nombres de departamentos
+
+# Mostrar el gráfico
+print(grafico_barras)
+
+# Guardar el gráfico como archivo .rds
+saveRDS(grafico_barras, "grafico_barras.rds")
+cat("El gráfico se ha guardado como 'grafico_barras.rds'.\n")
+
+```
+
+```{r}
+# Crear el gráfico de torta con etiquetas condicionales
+grafico_torta <- ggplot(votos_por_partido, aes(x = "", y = Porcentaje, fill = Partido)) +
+  geom_col(width = 1, color = "black") +
+  coord_polar(theta = "y") +
+  geom_text(
+    aes(label = ifelse(Porcentaje >= 5, paste0(round(Porcentaje, 1), "%"), "")),
+    position = position_stack(vjust = 0.5), 
+    color = "black", 
+    size = 5
+  ) +
+  scale_fill_manual(values = c(
+    "FP" = "orange", "PPK" = "pink", "FA" = "green",
+    "AP" = "red", "APRA_PPC" = "brown", "DD" = "yellow",
+    "FE" = "blue", "PP" = "purple", "PgP" = "cyan", "PPO" = "magenta"
+  )) +
+  labs(
+    title = "Distribución Porcentual de Votos por Partido",
+    fill = "Partido"
+  ) +
+  theme_void()
+
+# Mostrar el gráfico
+print(grafico_torta)
+
+
+
+# Guardar el gráfico como archivo .rds
+saveRDS(grafico_torta, "grafico_torta.rds")
+cat("El gráfico de torta se ha guardado como 'grafico_torta.rds'.\n")
+
+
+```
+
+
+```{r}
+# Instalar paquetes necesarios
+if (!requireNamespace("igraph", quietly = TRUE)) install.packages("igraph")
+if (!requireNamespace("ggplot2", quietly = TRUE)) install.packages("ggplot2")
+if (!requireNamespace("httr", quietly = TRUE)) install.packages("httr")
+if (!requireNamespace("readr", quietly = TRUE)) install.packages("readr")
+
+library(igraph)
+library(ggplot2)
+library(httr)
+library(readr)
+
+# Cargar la matriz de adyacencia desde Google Sheets
+url <- "https://docs.google.com/spreadsheets/d/1giqur_wkQRyIRE1WjnQmoEo-4LwPEXhxKzJ6QoV7-c8/export?format=csv"
+response <- GET(url)
+content <- content(response, as = "text")
+AlcalLima <- read_csv(content, col_names = TRUE)
+
+# Asegurarse de que la matriz tenga nombres de fila
+rownames(AlcalLima) <- AlcalLima[[1]]  # Usar la primera columna como nombres de fila
+AlcalLima <- AlcalLima[, -1]  # Eliminar la primera columna (que ahora es nombres de fila)
+
+# Eliminar la última columna para hacer la matriz cuadrada
+AlcalLima <- AlcalLima[, -ncol(AlcalLima)]
+
+# Crear el grafo desde la matriz de adyacencia
+G <- graph_from_adjacency_matrix(as.matrix(AlcalLima), mode = "undirected", diag = FALSE)
+
+# Usar el layout de primavera para posicionar los nodos
+layout <- layout_with_fr(G)
+
+# Convertir el layout en un data frame para graficar
+nodes_df <- data.frame(
+  name = V(G)$name,
+  x = layout[, 1],
+  y = layout[, 2]
+)
+
+edges_df <- as.data.frame(get.edgelist(G))
+colnames(edges_df) <- c("from", "to")
+
+# Mergear las posiciones para las aristas
+edges_positions <- merge(edges_df, nodes_df, by.x = "from", by.y = "name")
+edges_positions <- merge(edges_positions, nodes_df, by.x = "to", by.y = "name", suffixes = c(".from", ".to"))
+
+# Crear el gráfico con ggplot2
+ggplot() +
+  # Dibujar las aristas
+  geom_segment(data = edges_positions,
+               aes(x = x.from, y = y.from, xend = x.to, yend = y.to),
+               color = "red", linetype = "dashed", size = 0.5) +
+  # Dibujar los nodos
+  geom_point(data = nodes_df, aes(x = x, y = y), color = "yellow", size = 3) +
+  # Añadir etiquetas a los nodos
+  geom_text(data = nodes_df, aes(x = x, y = y, label = name),
+            vjust = 1.5, size = 1, color = "black") +
+  # Configurar título y tema
+  ggtitle("Red de Alcaldes distritales de Lima 2019-2022 y 2023-2026") +
+  theme_minimal() +
+  theme(
+    axis.line = element_blank(),
+    axis.text = element_blank(),
+    axis.ticks = element_blank(),
+    panel.grid = element_blank(),
+    panel.border = element_blank(),
+    plot.title = element_text(size = 16, hjust = 0.5)
+  )
+
+# Guardar el gráfico como un archivo .rds
+saveRDS(plot, file = "grafico_red_alcaldes.rds")
+
+```
+```{r}
+# Instalar paquetes necesarios
+if (!requireNamespace("igraph", quietly = TRUE)) install.packages("igraph")
+if (!requireNamespace("ggplot2", quietly = TRUE)) install.packages("ggplot2")
+if (!requireNamespace("httr", quietly = TRUE)) install.packages("httr")
+if (!requireNamespace("readr", quietly = TRUE)) install.packages("readr")
+
+library(igraph)
+library(ggplot2)
+library(httr)
+library(readr)
+
+# Nueva URL con la que se cargará la matriz de adyacencia
+url <- "https://docs.google.com/spreadsheets/d/1kLYYuSl9R-KQ9VMzawDRtvNWtiKhxUdcY8lp7qxxzy0/export?format=csv"
+response <- GET(url)
+content <- content(response, as = "text")
+AlcalLima <- read_csv(content, col_names = TRUE)
+
+# Asegurarse de que la matriz tenga nombres de fila
+rownames(AlcalLima) <- AlcalLima[[1]]  # Usar la primera columna como nombres de fila
+AlcalLima <- AlcalLima[, -1]  # Eliminar la primera columna, que es redundante
+
+# Convertir la matriz de adyacencia en un grafo
+g <- graph_from_adjacency_matrix(as.matrix(AlcalLima), mode = "undirected", diag = FALSE)
+
+# Configuración de las posiciones de los nodos (puedes cambiar el layout si lo prefieres)
+layout <- layout_with_fr(g)  # Layout Fruchterman-Reingold
+
+# Crear el gráfico
+ggplot() +
+  geom_point(aes(x = layout[, 1], y = layout[, 2]), size = 3, color = "yellow") +
+  geom_text(aes(x = layout[, 1], y = layout[, 2], label = V(g)$name), vjust = -1, size = 3) +
+  theme_minimal() +
+  labs(title = "Red de Alcaldes distritales de Lima 2019-2022 y 2023-2026") +
+  theme(axis.text = element_blank(), axis.ticks = element_blank(), axis.title = element_blank())
+
+```
+
+```{r}
+# Cargar bibliotecas
+library(sf)
+library(ggplot2)
+
+# Leer el archivo GeoJSON
+elecciones11 <- st_read("elecciones11.geojson")
+
+# Crear el gráfico
+mapa11 <- ggplot(elecciones11) +
+  geom_sf(aes(fill = Ganador)) +
+  scale_fill_manual(values = c(
+    "GP" = "orange", "F2011" = "pink", "AGC" = "green",
+    "PP" = "purple", "ASN" = "brown", "FP" = "yellow", 
+    "DN" = "cyan", "Adelante" = "magenta", "FN" = "blue", 
+    "JTE" = "red", "DFS" = "pink"
+  )) +
+  labs(title = "Mapa Electoral por Provincia - Ganador 2011") +
+  theme_minimal()
+
+# Mostrar el gráfico
+print(mapa11)
+
+# Guardar el gráfico como archivo .rds
+saveRDS(mapa11, "dinosaurioelectoral.rds")
+cat("El gráfico se ha guardado como 'dinosaurioelectoral'.\n")
+
+
+```
+
+```{r}
+# Cargar bibliotecas
+library(sf)
+library(ggplot2)
+
+# Leer el archivo GeoJSON
+elecciones11 <- st_read("elecciones11.geojson")
+
+# Crear el gráfico
+mapa_segundo_ganador <- ggplot(elecciones11) +
+  geom_sf(aes(fill = `Segundo.Ganador`)) +  # Usamos la columna de segundo ganador
+  scale_fill_manual(values = c(
+    "GP" = "orange", "F2011" = "pink", "AGC" = "green",
+    "PP" = "purple", "ASN" = "brown", "FP" = "yellow", 
+    "DN" = "cyan", "Adelante" = "magenta", "FN" = "blue", 
+    "JTE" = "red", "DFS" = "pink"
+  )) +
+  labs(title = "Mapa Electoral por Provincia - Segundo Ganador 2011") +
+  theme_minimal()
+
+
+# Mostrar el gráfico
+print(mapa_segundo_ganador)
+
+# Guardar el gráfico como archivo .rds
+saveRDS(mapa_segundo_ganador, "mapa_segundo_ganador_elecciones11.rds")
+cat("El gráfico del segundo ganador se ha guardado como 'mapa_segundo_ganador_elecciones11.rds'.\n")
+
+```
+

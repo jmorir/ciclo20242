@@ -1,0 +1,44 @@
+---
+title: "Dashboard final"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard) # always
+```
+
+## Intro {.sidebar}
+
+Se hizo una recopilación de los trabajos que más me gustaron con los temas del ciclo. No es algo muy llamativo pero si agrega todas las actividades que realizamos.
+
+
+
+## Column {data-width="550"}
+
+### Mapa de Uruguay
+
+```{r}
+knitr::include_graphics("uruguay_s2.png")
+```
+
+### Grafico de redes de Alcaldes de Lima
+
+```{r}
+knitr::include_graphics("redes.png")
+```
+
+## Column {data-width="550"}
+
+### Benchmarking de Pensión 65 por Departamento
+
+```{r}
+knitr::include_graphics("visualization.png")
+```
+
+### Ausentismo
+
+```{r}
+knitr::include_graphics("mapa_ausentismo_peru.png")
+```
